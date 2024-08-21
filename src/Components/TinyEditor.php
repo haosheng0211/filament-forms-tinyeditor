@@ -35,6 +35,8 @@ class TinyEditor extends Field implements Contracts\CanBeLengthConstrained, Cont
 
     protected string|\Closure $language;
 
+    protected array|\Closure $customConfigs = [];
+
     protected bool $toolbarSticky = false;
 
     // TinyMCE var: relative_urls
@@ -231,7 +233,13 @@ class TinyEditor extends Field implements Contracts\CanBeLengthConstrained, Cont
 
     public function getExternalPlugins(): array
     {
-        return $this->externalPlugins ?? [];
+        $externalPlugins = $this->externalPlugins ?? [];
+
+        if (config('filament-forms-tinyeditor.profiles.'.$this->profile.'.external_plugins')) {
+            $externalPlugins = array_merge($externalPlugins, config('filament-forms-tinyeditor.profiles.'.$this->profile.'.external_plugins'));
+        }
+
+        return $externalPlugins;
     }
 
     public function setExternalPlugins(array $plugins): static
@@ -372,12 +380,25 @@ class TinyEditor extends Field implements Contracts\CanBeLengthConstrained, Cont
         return json_encode(config('filament-forms-tinyeditor.templates.'.$this->template, []));
     }
 
+    public function customConfigs(array|\Closure $customConfigs): static
+    {
+        $this->customConfigs = $customConfigs;
+
+        return $this;
+    }
+
     public function getCustomConfigs(): string
     {
+        $customConfigs = $this->evaluate($this->customConfigs);
+
         if (config('filament-forms-tinyeditor.profiles.'.$this->profile.'.custom_configs')) {
-            return '...'.json_encode(config('filament-forms-tinyeditor.profiles.'.$this->profile.'.custom_configs'));
+            $customConfigs = array_merge($customConfigs, config('filament-forms-tinyeditor.profiles.'.$this->profile.'.custom_configs'));
         }
 
-        return '';
+        if (empty($customConfigs)) {
+            return '';
+        }
+
+        return '...'.json_encode($customConfigs);
     }
 }
